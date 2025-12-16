@@ -1,0 +1,47 @@
+{
+	"Name": "SteelSeries GG Sonar",
+	"Version": "0.1.0.0",
+	"Author": "HarleyCodes",
+	"Actions": [
+		{
+			"Name": "Counter",
+			"UUID": "com.harleycodes.steelseries-gg-sonar.increment",
+			"Icon": "imgs/actions/counter/icon",
+			"Tooltip": "Displays a count, which increments by one on press.",
+			"PropertyInspectorPath": "ui/increment-counter.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/counter/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		}
+	],
+	"Category": "SteelSeries GG Sonar",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Description": "Control the SteelSeries GG Sonar software from your Stream Deck.",
+	"Icon": "imgs/plugin/marketplace",
+	"SDKVersion": 3,
+	"Software": {
+		"MinimumVersion": "6.9"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		},
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "20",
+		"Debug": "enabled"
+	},
+	"UUID": "com.harleycodes.steelseries-gg-sonar"
+}

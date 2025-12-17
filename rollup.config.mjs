@@ -4,7 +4,7 @@ import terser from "@rollup/plugin-terser";
 import typescript from "@rollup/plugin-typescript";
 import path from "node:path";
 import url from "node:url";
-
+import json from "@rollup/plugin-json";
 const isWatching = !!process.env.ROLLUP_WATCH;
 const sdPlugin = "com.harleycodes.steelseries-gg-sonar.sdPlugin";
 
@@ -17,10 +17,13 @@ const config = {
 		file: `${sdPlugin}/bin/plugin.js`,
 		sourcemap: isWatching,
 		sourcemapPathTransform: (relativeSourcePath, sourcemapPath) => {
-			return url.pathToFileURL(path.resolve(path.dirname(sourcemapPath), relativeSourcePath)).href;
-		}
+			return url.pathToFileURL(
+				path.resolve(path.dirname(sourcemapPath), relativeSourcePath)
+			).href;
+		},
 	},
 	plugins: [
+		json(),
 		{
 			name: "watch-externals",
 			buildStart: function () {
@@ -28,22 +31,26 @@ const config = {
 			},
 		},
 		typescript({
-			mapRoot: isWatching ? "./" : undefined
+			mapRoot: isWatching ? "./" : undefined,
 		}),
 		nodeResolve({
 			browser: false,
 			exportConditions: ["node"],
-			preferBuiltins: true
+			preferBuiltins: true,
 		}),
 		commonjs(),
 		!isWatching && terser(),
 		{
 			name: "emit-module-package-file",
 			generateBundle() {
-				this.emitFile({ fileName: "package.json", source: `{ "type": "module" }`, type: "asset" });
-			}
-		}
-	]
+				this.emitFile({
+					fileName: "package.json",
+					source: `{ "type": "module" }`,
+					type: "asset",
+				});
+			},
+		},
+	],
 };
 
 export default config;

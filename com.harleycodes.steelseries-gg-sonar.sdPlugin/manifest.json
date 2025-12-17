@@ -4,27 +4,31 @@
 	"Author": "HarleyCodes",
 	"Actions": [
 		{
-			"Name": "Counter",
-			"UUID": "com.harleycodes.steelseries-gg-sonar.increment",
-			"Icon": "imgs/actions/counter/icon",
-			"Tooltip": "Displays a count, which increments by one on press.",
-			"PropertyInspectorPath": "ui/increment-counter.html",
-			"Controllers": [
-				"Keypad"
-			],
+			"Name": "Channel Dial",
+			"UUID": "com.harleycodes.steelseries-gg-sonar.channel-dial",
+			"Icon": "imgs/actions/dial/config-icon-white",
+			"Tooltip": "Control volume of a channel in Sonar.",
+			"PropertyInspectorPath": "ui/channel-dial.html",
+			"Controllers": ["Encoder"],
+			"Encoder": {
+				"layout": "$B1",
+				"TriggerDescription": {
+					"Push": "Toggle Mute",
+					"Rotate": "Adjust Volume"
+				}
+			},
 			"States": [
 				{
-					"Image": "imgs/actions/counter/key",
-					"TitleAlignment": "middle"
+					"Image": "imgs/actions/dial/config-icon-blue"
 				}
 			]
 		}
 	],
 	"Category": "SteelSeries GG Sonar",
-	"CategoryIcon": "imgs/plugin/category-icon",
+	"CategoryIcon": "imgs/plugin/plugin-category",
 	"CodePath": "bin/plugin.js",
 	"Description": "Control the SteelSeries GG Sonar software from your Stream Deck.",
-	"Icon": "imgs/plugin/marketplace",
+	"Icon": "imgs/plugin/plugin-category",
 	"SDKVersion": 3,
 	"Software": {
 		"MinimumVersion": "6.9"

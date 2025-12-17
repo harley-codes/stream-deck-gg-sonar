@@ -2,16 +2,24 @@
 	/* JSON schemas */
 	"json.schemas": [
 		{
-			"fileMatch": [
-				"**/manifest.json"
-			],
+			"fileMatch": ["**/manifest.json"],
 			"url": "https://schemas.elgato.com/streamdeck/plugins/manifest.json"
 		},
 		{
-			"fileMatch": [
-				"**/layouts/*.json"
-			],
+			"fileMatch": ["**/layouts/*.json"],
 			"url": "https://schemas.elgato.com/streamdeck/plugins/layout.json"
 		}
+	],
+	"editor.insertSpaces": false,
+	"editor.tabSize": 4,
+	"prettier.useTabs": true,
+	"prettier.tabWidth": 4,
+	"cSpell.words": [
+		"elgato",
+		"harleycodes",
+		"imgs",
+		"sdpi",
+		"steelseries",
+		"streamdeck"
 	]
 }

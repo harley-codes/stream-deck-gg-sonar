@@ -92,8 +92,7 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 
 		if (data === null)
 			return ev.action.setFeedback({
-				indicator: 100,
-				value: "",
+				value: "Disabled",
 			});
 
 		var displayMixValue = ((data.balance + 1) / 2) * 100;
@@ -117,10 +116,7 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 				value: "",
 			});
 		var displayMixValue = ((data.balance + 1) / 2) * 100;
-		var displayMixText =
-			data.state === "enabled"
-				? `${displayMixValue.toFixed(0)}%`
-				: "Disabled";
+		var displayMixText = `${displayMixValue.toFixed(0)}%`;
 
 		action.setFeedback({
 			indicator: displayMixValue,

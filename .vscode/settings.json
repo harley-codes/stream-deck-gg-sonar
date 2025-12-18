@@ -15,6 +15,7 @@
 	"prettier.useTabs": true,
 	"prettier.tabWidth": 4,
 	"cSpell.words": [
+		"chatmix",
 		"elgato",
 		"harleycodes",
 		"imgs",

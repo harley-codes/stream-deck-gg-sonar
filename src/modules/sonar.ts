@@ -21,6 +21,11 @@ type ClassicSettings = {
 	muted: boolean;
 };
 
+type ChatmixData = {
+	balance: number;
+	state: "enabled" | "finiteWheel" | string;
+};
+
 function fromClientChannelName(channel: SonarChannel): Channel {
 	switch (channel) {
 		case "master":
@@ -118,6 +123,39 @@ export async function toggleChannelMute(
 				? newVolumeData.masters?.classic
 				: newVolumeData.devices[internalChannel]?.classic;
 
+		return newData ?? null;
+	} catch {
+		return null;
+	}
+}
+
+export async function getChatmixData(): Promise<ChatmixData | null> {
+	try {
+		const sonar = await Sonar.init();
+		const data = (await sonar.getChatMixData()) as ChatmixData;
+		return data ?? null;
+	} catch {
+		return null;
+	}
+}
+
+export async function offsetChatmixBalance(
+	offsetTicks: number
+): Promise<ChatmixData | null> {
+	try {
+		const sonar = await Sonar.init();
+		const currentData = (await sonar.getChatMixData()) as ChatmixData;
+
+		if (!currentData) return null;
+
+		let offsetMix = offsetTicks / 100;
+		let newMix = currentData.balance + offsetMix;
+		if (newMix > 1) newMix = 1;
+		if (newMix < -1) newMix = -1;
+
+		await sonar.setChatMix(newMix);
+
+		const newData = (await sonar.getChatMixData()) as ChatmixData;
 		return newData ?? null;
 	} catch {
 		return null;

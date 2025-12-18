@@ -22,13 +22,32 @@
 					"Image": "imgs/actions/dial-action-icon"
 				}
 			]
+		},
+		{
+			"Name": "CHATMIX Dial",
+			"UUID": "com.harleycodes.steelseries-gg-sonar.chatmix-dial",
+			"Icon": "imgs/actions/chatmix-action-icon",
+			"Tooltip": "Control CHATMIX in Sonar.",
+			"PropertyInspectorPath": "ui/chatmix-dial.html",
+			"Controllers": ["Encoder"],
+			"Encoder": {
+				"layout": "$B2",
+				"TriggerDescription": {
+					"Rotate": "Adjust Volume"
+				}
+			},
+			"States": [
+				{
+					"Image": "imgs/actions/chatmix-action-padded-icon"
+				}
+			]
 		}
 	],
 	"Category": "SteelSeries GG Sonar",
 	"CategoryIcon": "imgs/plugin/plugin-category",
 	"CodePath": "bin/plugin.js",
 	"Description": "Control the SteelSeries GG Sonar software from your Stream Deck.",
-	"Icon": "imgs/plugin/plugin-category",
+	"Icon": "imgs/plugin/plugin-category-png",
 	"SDKVersion": 3,
 	"Software": {
 		"MinimumVersion": "6.9"

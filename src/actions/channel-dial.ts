@@ -9,48 +9,25 @@ import {
 	WillDisappearEvent,
 } from "@elgato/streamdeck";
 
-import { getDefaultColor } from "../functions/getDefaultColor";
 import { getChannelDisplayName } from "../functions/getChannelDisplayName";
-import { getChannelImagePath } from "../functions/getChannelImagePath";
-import { sonarGetChannelVolumeAsync } from "../functions/sonarGetChannelVolumeAsync";
-import { sonarOffsetChannelVolumeAsync } from "../functions/sonarOffestChannelVolumeAsync";
-import { clampVolume } from "../functions/clampVolume";
-import { sonarToggleChannelMuteAsync } from "../functions/sonarToggleChannelMuteAsync";
-import { sonarGetChannelMuteAsync } from "../functions/sonarGetChannelMuteAsync";
+import { SonarChannel } from "../types/sonarChannel";
+import {
+	getChannelData,
+	offsetChannelVolume,
+	toggleChannelMute,
+} from "../modules/sonar";
+import { getChannelIcon } from "../functions/getChannelIcon";
 
 type ActionSettings = {
-	channel: "master" | "game" | "chat" | "media" | "aux" | "mic";
-	color?: string;
+	channel?: SonarChannel;
 	changeSpeed: number;
 	pollingSpeed: number;
+	useSonarColors?: boolean;
 };
 
 @action({ UUID: "com.harleycodes.steelseries-gg-sonar.channel-dial" })
 export class ChannelDial extends SingletonAction<ActionSettings> {
 	private intervalId: NodeJS.Timeout | null = null;
-
-	private async updateDisplay(action: DialAction<ActionSettings>) {
-		if (!action.isDial()) return;
-
-		var latestSettings = await action.getSettings();
-
-		var channelVolume = await sonarGetChannelVolumeAsync(
-			latestSettings.channel
-		);
-		var channelVolumeDisplay = clampVolume(channelVolume, true) * 100;
-		var channelIsMuted = await sonarGetChannelMuteAsync(
-			latestSettings.channel
-		);
-
-		action.setFeedback({
-			icon: getChannelImagePath(latestSettings.channel),
-			indicator: channelVolume * 100,
-			value: !channelIsMuted
-				? `${channelVolumeDisplay.toFixed(0)}%`
-				: "Muted",
-			title: getChannelDisplayName(latestSettings.channel),
-		});
-	}
 
 	override async onWillAppear(
 		ev: WillAppearEvent<ActionSettings>
@@ -59,9 +36,9 @@ export class ChannelDial extends SingletonAction<ActionSettings> {
 
 		var settings = ev.payload.settings;
 		if (!settings.channel) settings.channel = "master";
-		if (!settings.color) settings.color = getDefaultColor(settings.channel);
 		if (!settings.changeSpeed) settings.changeSpeed = 5;
 		if (!settings.pollingSpeed) settings.pollingSpeed = 750;
+		if (!settings.useSonarColors) settings.useSonarColors = true;
 
 		ev.action.setSettings(settings);
 		this.intervalId = setInterval(
@@ -84,16 +61,23 @@ export class ChannelDial extends SingletonAction<ActionSettings> {
 		ev: DidReceiveSettingsEvent<ActionSettings>
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
-		var settings = ev.payload.settings;
-		settings.color = getDefaultColor(settings.channel);
-		ev.action.setSettings(settings);
+		const settings = ev.payload.settings;
+		if (!settings.channel) return;
+
 		ev.action.setTitle(getChannelDisplayName(settings.channel));
-		var channelVolume = await sonarGetChannelVolumeAsync(settings.channel);
-		var displayVolume = clampVolume(channelVolume, true) * 100;
+
+		const data = await getChannelData(settings.channel);
+		if (data === null) return;
+
+		const displayVolumeValue = data.volume * 100;
+		const displayVolumeText = data.muted
+			? "Muted"
+			: `${displayVolumeValue.toFixed(0)}%`;
+
 		ev.action.setFeedback({
-			icon: getChannelImagePath(settings.channel),
-			indicator: displayVolume,
-			value: `${displayVolume.toFixed(0)}%`,
+			icon: getChannelIcon(settings.channel, settings.useSonarColors),
+			indicator: displayVolumeValue,
+			value: displayVolumeText,
 		});
 	}
 
@@ -101,15 +85,70 @@ export class ChannelDial extends SingletonAction<ActionSettings> {
 		ev: DialRotateEvent<ActionSettings>
 	): Promise<void> {
 		var settings = ev.payload.settings;
-		var amount = (ev.payload.ticks / 100) * settings.changeSpeed;
-		await sonarOffsetChannelVolumeAsync(settings.channel, amount);
-		await this.updateDisplay(ev.action);
+		if (!settings.channel) return;
+
+		var amount = ev.payload.ticks * settings.changeSpeed;
+		var data = await offsetChannelVolume(settings.channel, amount);
+
+		if (data === null) return;
+
+		const displayVolumeValue = data.volume * 100;
+		const displayVolumeText = data.muted
+			? "Muted"
+			: `${displayVolumeValue.toFixed(0)}%`;
+
+		ev.action.setFeedback({
+			icon: getChannelIcon(settings.channel, settings.useSonarColors),
+			indicator: displayVolumeValue,
+			value: displayVolumeText,
+		});
 	}
 
 	override async onDialUp(ev: DialUpEvent<ActionSettings>): Promise<void> {
 		var settings = ev.payload.settings;
-		var result = await sonarToggleChannelMuteAsync(settings.channel);
-		if (result === undefined) return;
-		await this.updateDisplay(ev.action);
+		if (!settings.channel) return;
+
+		var data = await toggleChannelMute(settings.channel);
+
+		if (data === null) return;
+
+		const displayVolumeValue = data.volume * 100;
+		const displayVolumeText = data.muted
+			? "Muted"
+			: `${displayVolumeValue.toFixed(0)}%`;
+
+		ev.action.setFeedback({
+			icon: getChannelIcon(settings.channel, settings.useSonarColors),
+			indicator: displayVolumeValue,
+			value: displayVolumeText,
+		});
+	}
+
+	private async updateDisplay(action: DialAction<ActionSettings>) {
+		if (!action.isDial()) return;
+
+		var settings = await action.getSettings();
+		if (!settings.channel) return;
+
+		var data = await getChannelData(settings.channel);
+		if (data === null)
+			return action.setFeedback({
+				icon: "",
+				indicator: 0,
+				value: "",
+				title: getChannelDisplayName(settings.channel),
+			});
+
+		const displayVolumeValue = data.volume * 100;
+		const displayVolumeText = data.muted
+			? "Muted"
+			: `${displayVolumeValue.toFixed(0)}%`;
+
+		action.setFeedback({
+			icon: getChannelIcon(settings.channel, settings.useSonarColors),
+			indicator: displayVolumeValue,
+			value: displayVolumeText,
+			title: getChannelDisplayName(settings.channel),
+		});
 	}
 }

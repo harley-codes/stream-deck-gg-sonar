@@ -1,0 +1,14 @@
+// Icon: Volume Knob (Bold)
+// Source: https://iconbuddy.com/solar/volume-knob-bold
+// License: Check source for details. IconBuddy, Solar Icons
+
+import { IconProps } from "./props";
+
+function create(props?: IconProps): string {
+	const fill = props?.fill ?? "#FFFFFF";
+	const size = props?.size ?? 200;
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24"><path fill="${fill}" d="M11.25 7.056a5.001 5.001 0 1 0 1.5 0V11a.75.75 0 0 1-1.5 0V7.056ZM13 3.5a1 1 0 1 1-2 0a1 1 0 0 1 2 0Zm7.5 9.5a1 1 0 1 1 0-2a1 1 0 0 1 0 2Zm-17 0a1 1 0 1 1 0-2a1 1 0 0 1 0 2Zm3.197-7.718a1 1 0 1 1-1.414 1.415a1 1 0 0 1 1.414-1.415Zm12.02 12.021a1 1 0 1 1-1.414 1.415a1 1 0 0 1 1.414-1.415Zm0-10.606a1 1 0 1 1-1.414-1.415a1 1 0 0 1 1.414 1.415ZM6.697 18.718a1 1 0 1 1-1.414-1.415a1 1 0 0 1 1.414 1.415Z"/></svg>`;
+}
+
+export const iconVolumeKnob = create();
+export const createIconVolumeKnob = create;

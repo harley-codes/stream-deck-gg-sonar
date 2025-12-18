@@ -1,4 +1,4 @@
-export function getChannelDisplayName(channel: string): string {
+export function getChannelDisplayName(channel?: string): string {
 	switch (channel) {
 		case "master":
 			return "Master";

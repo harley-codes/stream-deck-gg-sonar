@@ -6,7 +6,7 @@
 		{
 			"Name": "Channel Dial",
 			"UUID": "com.harleycodes.steelseries-gg-sonar.channel-dial",
-			"Icon": "imgs/actions/dial/config-icon-white",
+			"Icon": "imgs/actions/dial-action-icon",
 			"Tooltip": "Control volume of a channel in Sonar.",
 			"PropertyInspectorPath": "ui/channel-dial.html",
 			"Controllers": ["Encoder"],
@@ -19,7 +19,7 @@
 			},
 			"States": [
 				{
-					"Image": "imgs/actions/dial/config-icon-blue"
+					"Image": "imgs/actions/dial-action-icon"
 				}
 			]
 		}

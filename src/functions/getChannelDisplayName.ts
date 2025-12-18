@@ -1,18 +1,18 @@
 export function getChannelDisplayName(channel?: string): string {
 	switch (channel) {
 		case "master":
-			return "Master";
+			return "MASTER";
 		case "game":
-			return "Game";
+			return "GAME";
 		case "chat":
-			return "Chat";
+			return "CHAT";
 		case "media":
-			return "Media";
+			return "MEDIA";
 		case "aux":
 			return "AUX";
 		case "mic":
-			return "Microphone";
+			return "MIC";
 		default:
-			return "Unknown";
+			return "???";
 	}
 }

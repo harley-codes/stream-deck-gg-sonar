@@ -2,7 +2,6 @@ import {
 	action,
 	DialAction,
 	DialRotateEvent,
-	DialUpEvent,
 	DidReceiveSettingsEvent,
 	SingletonAction,
 	WillAppearEvent,
@@ -10,14 +9,10 @@ import {
 } from "@elgato/streamdeck";
 
 import { getChatmixData, offsetChatmixBalance } from "../modules/sonar";
-import {
-	SONAR_COLOR_CHAT,
-	SONAR_COLOR_CHATMIX,
-	SONAR_COLOR_GAME,
-} from "../const/sonarColors";
-import { createIconAdjust } from "../svg/iconAdjust";
-import { ELGATO_ALT_WHITE } from "../const/elgatoColors";
+import { SONAR_COLOR_CHAT, SONAR_COLOR_GAME } from "../const/sonarColors";
+
 import { getChatmixIcon } from "../functions/getChatmixIcon";
+import { ELGATO_ALT_WHITE, ELGATO_GREY } from "../const/elgatoColors";
 
 type ActionSettings = {
 	changeSpeed: number;
@@ -25,7 +20,8 @@ type ActionSettings = {
 	useColor?: boolean;
 };
 
-const CHATMIX_GRADIENT = `0:${SONAR_COLOR_GAME},1:${SONAR_COLOR_CHAT}`;
+const CHATMIX_GRADIENT = `0:${ELGATO_ALT_WHITE},0.5:${ELGATO_GREY},1:${ELGATO_ALT_WHITE}`;
+const CHATMIX_GRADIENT_COLORED = `0:${SONAR_COLOR_GAME},1:${SONAR_COLOR_CHAT}`;
 
 @action({ UUID: "com.harleycodes.steelseries-gg-sonar.chatmix-dial" })
 export class ChatmixDial extends SingletonAction<ActionSettings> {
@@ -46,9 +42,11 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 		ev.action.setFeedback({
 			indicator: {
 				value: 50,
-				bar_bg_c: CHATMIX_GRADIENT,
+				bar_bg_c: settings.useColor
+					? CHATMIX_GRADIENT_COLORED
+					: CHATMIX_GRADIENT,
 			},
-			title: "Chatmix",
+			title: "CHATMIX",
 			icon: getChatmixIcon(settings.useColor),
 		});
 
@@ -76,6 +74,11 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 
 		ev.action.setFeedback({
 			icon: getChatmixIcon(settings.useColor),
+			indicator: {
+				bar_bg_c: settings.useColor
+					? CHATMIX_GRADIENT_COLORED
+					: CHATMIX_GRADIENT,
+			},
 		});
 	}
 

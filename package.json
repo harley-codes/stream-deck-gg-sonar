@@ -1,7 +1,8 @@
 {
 	"scripts": {
 		"build": "rollup -c",
-		"watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.harleycodes.steelseries-gg-sonar\""
+		"watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.harleycodes.steelseries-gg-sonar\"",
+		"package": "streamdeck pack com.harleycodes.steelseries-gg-sonar.sdPlugin/ --output dist/"
 	},
 	"type": "module",
 	"devDependencies": {

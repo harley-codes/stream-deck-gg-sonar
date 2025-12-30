@@ -1,6 +1,6 @@
 {
-	"Name": "SteelSeries GG Sonar",
-	"Version": "0.1.0.0",
+	"Name": "SteelSeries GG Sonar Controls",
+	"Version": "1.0.0.0",
 	"Author": "HarleyCodes",
 	"Actions": [
 		{
@@ -9,7 +9,9 @@
 			"Icon": "imgs/actions/dial-action-icon",
 			"Tooltip": "Control volume of a channel in Sonar.",
 			"PropertyInspectorPath": "ui/channel-dial.html",
-			"Controllers": ["Encoder"],
+			"Controllers": [
+				"Encoder"
+			],
 			"Encoder": {
 				"layout": "$B1",
 				"TriggerDescription": {
@@ -29,7 +31,9 @@
 			"Icon": "imgs/actions/chatmix-action-icon",
 			"Tooltip": "Control CHATMIX in Sonar.",
 			"PropertyInspectorPath": "ui/chatmix-dial.html",
-			"Controllers": ["Encoder"],
+			"Controllers": [
+				"Encoder"
+			],
 			"Encoder": {
 				"layout": "$B2",
 				"TriggerDescription": {
@@ -53,10 +57,6 @@
 		"MinimumVersion": "6.9"
 	},
 	"OS": [
-		{
-			"Platform": "mac",
-			"MinimumVersion": "12"
-		},
 		{
 			"Platform": "windows",
 			"MinimumVersion": "10"

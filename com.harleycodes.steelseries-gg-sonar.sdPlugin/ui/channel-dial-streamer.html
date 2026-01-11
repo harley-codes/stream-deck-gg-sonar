@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head lang="en">
+		<title>Channel Dial Settings</title>
+		<meta charset="utf-8" />
+		<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+	</head>
+
+	<body>
+		<!-- Learn more about property inspector components at https://sdpi-components.dev/docs/components -->
+		<sdpi-item label="Channel">
+			<sdpi-select
+				setting="channel"
+				default="master"
+				placeholder="Please choose a channel to control."
+			>
+				<option value="master">Master</option>
+				<option value="game">Game</option>
+				<option value="chat">Chat</option>
+				<option value="media">Media</option>
+				<option value="aux">AUX</option>
+				<option value="mic">Microphone</option>
+			</sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Volume Speed Ticks">
+			<sdpi-range
+				setting="changeSpeed"
+				min="1"
+				max="10"
+				step="1"
+				default="5"
+				showlabels
+			>
+			</sdpi-range>
+		</sdpi-item>
+		<sdpi-item label="Refresh Rate Milliseconds">
+			<sdpi-range
+				setting="pollingSpeed"
+				min="150"
+				max="2500"
+				step="1"
+				default="750"
+				showlabels
+			>
+			</sdpi-range>
+		</sdpi-item>
+	</body>
+</html>

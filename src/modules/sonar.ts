@@ -1,5 +1,6 @@
 import { Channel, Sonar } from "steelseries-sonar-js";
 import { SonarChannel } from "../types/sonarChannel";
+import { StreamType } from "../types/streamTypes";
 
 type SonarVolumeData = {
 	masters: ChannelSettings | undefined;
@@ -13,12 +14,24 @@ type SonarVolumeData = {
 };
 
 type ChannelSettings = {
-	classic: ClassicSettings;
+	classic?: ClassicSettings;
+	stream?: StreamSettings;
 };
 
 type ClassicSettings = {
 	volume: number;
 	muted: boolean;
+};
+
+type StreamSettings = {
+	streaming: {
+		volume: number;
+		muted: boolean;
+	};
+	monitoring: {
+		volume: number;
+		muted: boolean;
+	};
 };
 
 type ChatmixData = {
@@ -55,6 +68,25 @@ export async function getChannelData(
 			internalChannel === "master"
 				? volumeData.masters?.classic
 				: volumeData.devices[internalChannel]?.classic;
+
+		return data ?? null;
+	} catch {
+		return null;
+	}
+}
+
+export async function getChannelDataStreamer(
+	channel: SonarChannel
+): Promise<StreamSettings | null> {
+	try {
+		const sonar = await Sonar.init();
+		const volumeData = (await sonar.getVolumeData()) as SonarVolumeData;
+		const internalChannel = fromClientChannelName(channel);
+
+		const data =
+			internalChannel === "master"
+				? volumeData.masters?.stream
+				: volumeData.devices[internalChannel]?.stream;
 
 		return data ?? null;
 	} catch {
@@ -99,6 +131,49 @@ export async function offsetChannelVolume(
 	}
 }
 
+export async function offsetChannelVolumeStream(
+	channel: SonarChannel,
+	offsetTicks: number,
+	streamType: StreamType
+): Promise<StreamSettings | null> {
+	try {
+		const sonar = await Sonar.init();
+		const currentVolumeData =
+			(await sonar.getVolumeData()) as SonarVolumeData;
+		const internalChannel = fromClientChannelName(channel);
+
+		const currentData =
+			internalChannel === "master"
+				? currentVolumeData.masters?.stream
+				: currentVolumeData.devices[internalChannel]?.stream;
+
+		if (!currentData) return null;
+
+		const currentVolume =
+			streamType === "streaming"
+				? currentData.streaming.volume
+				: currentData.monitoring.volume;
+
+		let offsetVolume = offsetTicks / 100;
+		let newVolume = currentVolume + offsetVolume;
+		if (newVolume > 1) newVolume = 1;
+		if (newVolume < 0) newVolume = 0;
+
+		await sonar.setVolume(internalChannel, newVolume, streamType);
+
+		const newVolumeData = (await sonar.getVolumeData()) as SonarVolumeData;
+
+		const newData =
+			internalChannel === "master"
+				? newVolumeData.masters?.stream
+				: newVolumeData.devices[internalChannel]?.stream;
+
+		return newData ?? null;
+	} catch {
+		return null;
+	}
+}
+
 export async function toggleChannelMute(
 	channel: SonarChannel
 ): Promise<ClassicSettings | null> {
@@ -122,6 +197,42 @@ export async function toggleChannelMute(
 			internalChannel === "master"
 				? newVolumeData.masters?.classic
 				: newVolumeData.devices[internalChannel]?.classic;
+
+		return newData ?? null;
+	} catch {
+		return null;
+	}
+}
+
+export async function toggleChannelMuteStream(
+	channel: SonarChannel,
+	streamType: StreamType
+): Promise<StreamSettings | null> {
+	try {
+		const sonar = await Sonar.init();
+		const volumeData = (await sonar.getVolumeData()) as SonarVolumeData;
+		const internalChannel = fromClientChannelName(channel);
+
+		const data =
+			internalChannel === "master"
+				? volumeData.masters?.stream
+				: volumeData.devices[internalChannel]?.stream;
+
+		if (!data) return null;
+
+		const isMuted =
+			streamType === "streaming"
+				? data.streaming.muted
+				: data.monitoring.muted;
+
+		await sonar.muteChannel(internalChannel, !isMuted, streamType);
+
+		const newVolumeData = (await sonar.getVolumeData()) as SonarVolumeData;
+
+		const newData =
+			internalChannel === "master"
+				? newVolumeData.masters?.stream
+				: newVolumeData.devices[internalChannel]?.stream;
 
 		return newData ?? null;
 	} catch {

@@ -25,8 +25,8 @@ type ActionSettings = {
 	useSonarColors?: boolean;
 };
 
-@action({ UUID: "com.harleycodes.steelseries-gg-sonar.channel-dial" })
-export class ChannelDial extends SingletonAction<ActionSettings> {
+@action({ UUID: "com.harleycodes.steelseries-gg-sonar.channel-dial-classic" })
+export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 	private intervalId: NodeJS.Timeout | null = null;
 
 	override async onWillAppear(

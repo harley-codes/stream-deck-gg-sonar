@@ -1,22 +1,45 @@
 {
 	"Name": "SteelSeries GG Sonar Controls",
-	"Version": "1.0.0.0",
+	"Version": "1.1.0.0",
 	"Author": "HarleyCodes",
 	"Actions": [
 		{
-			"Name": "Channel Dial",
-			"UUID": "com.harleycodes.steelseries-gg-sonar.channel-dial",
+			"Name": "Channel Dial - Classic",
+			"UUID": "com.harleycodes.steelseries-gg-sonar.channel-dial-classic",
 			"Icon": "imgs/actions/dial-action-icon",
 			"Tooltip": "Control volume of a channel in Sonar.",
-			"PropertyInspectorPath": "ui/channel-dial.html",
+			"PropertyInspectorPath": "ui/channel-dial-classic.html",
 			"Controllers": [
 				"Encoder"
 			],
 			"Encoder": {
 				"layout": "$B1",
 				"TriggerDescription": {
+					"Rotate": "Adjust Volume",
+					"Push": "Toggle Mute"
+				}
+			},
+			"States": [
+				{
+					"Image": "imgs/actions/dial-action-icon"
+				}
+			]
+		},
+		{
+			"Name": "Channel Dial - Streamer",
+			"UUID": "com.harleycodes.steelseries-gg-sonar.channel-dial-streamer",
+			"Icon": "imgs/actions/dial-action-icon",
+			"Tooltip": "Control volume of a channel in Sonar.",
+			"PropertyInspectorPath": "ui/channel-dial-streamer.html",
+			"Controllers": [
+				"Encoder"
+			],
+			"Encoder": {
+				"layout": "$C1",
+				"TriggerDescription": {
+					"Rotate": "Adjust Volume",
 					"Push": "Toggle Mute",
-					"Rotate": "Adjust Volume"
+					"Touch": "Toggle Target"
 				}
 			},
 			"States": [

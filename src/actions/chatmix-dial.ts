@@ -8,11 +8,16 @@ import {
 	WillDisappearEvent,
 } from "@elgato/streamdeck";
 
-import { getChatmixData, offsetChatmixBalance } from "../modules/sonar";
 import { SONAR_COLOR_CHAT, SONAR_COLOR_GAME } from "../const/sonarColors";
 
 import { getChatmixIcon } from "../functions/getChatmixIcon";
 import { ELGATO_ALT_WHITE, ELGATO_GREY } from "../const/elgatoColors";
+import {
+	getAppEndpoint,
+	getChatMixState,
+	getSonarEndpointCached,
+	setChatMixBalance,
+} from "steelseries-sonar-sdk";
 
 type ActionSettings = {
 	changeSpeed: number;
@@ -26,9 +31,21 @@ const CHATMIX_GRADIENT_COLORED = `0:${SONAR_COLOR_GAME},1:${SONAR_COLOR_CHAT}`;
 @action({ UUID: "com.harleycodes.steelseries-gg-sonar.chatmix-dial" })
 export class ChatmixDial extends SingletonAction<ActionSettings> {
 	private intervalId: NodeJS.Timeout | null = null;
+	private appEndpoint: string | null = null;
 
+	private async getEndpoint(): Promise<string | null> {
+		try {
+			if (!this.appEndpoint) {
+				this.appEndpoint = await getAppEndpoint();
+			}
+			return await getSonarEndpointCached(this.appEndpoint);
+		} catch (err) {
+			console.error("Error getting Sonar endpoint:", err);
+			return null;
+		}
+	}
 	override async onWillAppear(
-		ev: WillAppearEvent<ActionSettings>
+		ev: WillAppearEvent<ActionSettings>,
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
 
@@ -53,12 +70,12 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 		this.intervalId = setInterval(
 			this.updateDisplay,
 			settings.pollingSpeed,
-			ev.action
+			ev.action,
 		);
 	}
 
 	override onWillDisappear(
-		ev: WillDisappearEvent<ActionSettings>
+		ev: WillDisappearEvent<ActionSettings>,
 	): Promise<void> | void {
 		if (this.intervalId) {
 			clearInterval(this.intervalId);
@@ -67,7 +84,7 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 	}
 
 	override async onDidReceiveSettings(
-		ev: DidReceiveSettingsEvent<ActionSettings>
+		ev: DidReceiveSettingsEvent<ActionSettings>,
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
 		const settings = ev.payload.settings;
@@ -83,23 +100,32 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 	}
 
 	override async onDialRotate(
-		ev: DialRotateEvent<ActionSettings>
+		ev: DialRotateEvent<ActionSettings>,
 	): Promise<void> {
 		var settings = ev.payload.settings;
+		if (!settings) return;
 
-		var amount = ev.payload.ticks * settings.changeSpeed;
-		var data = await offsetChatmixBalance(amount);
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
 
-		if (data === null)
+		let chatmixState = await getChatMixState(endpoint);
+		if (!chatmixState) return;
+
+		if (!chatmixState.isEnabled) {
 			return ev.action.setFeedback({
 				value: "Disabled",
 			});
+		}
 
-		var displayMixValue = ((data.balance + 1) / 2) * 100;
-		var displayMixText =
-			data.state === "enabled"
-				? `${displayMixValue.toFixed(0)}%`
-				: "Disabled";
+		const volumeOffset = ev.payload.ticks * settings.changeSpeed;
+		const newVolume = chatmixState.chatBalance + volumeOffset;
+
+		chatmixState = await setChatMixBalance(endpoint, newVolume);
+
+		var displayMixValue = chatmixState.chatBalance;
+		var displayMixText = chatmixState.isEnabled
+			? `${displayMixValue.toFixed(0)}%`
+			: "Disabled";
 
 		ev.action.setFeedback({
 			indicator: displayMixValue,
@@ -109,14 +135,24 @@ export class ChatmixDial extends SingletonAction<ActionSettings> {
 
 	private async updateDisplay(action: DialAction<ActionSettings>) {
 		if (!action.isDial()) return;
-		var data = await getChatmixData();
-		if (data === null)
+
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
+
+		let chatmixState = await getChatMixState(endpoint);
+		if (!chatmixState) return;
+
+		if (!chatmixState.isEnabled) {
 			return action.setFeedback({
 				indicator: 0,
 				value: "",
 			});
-		var displayMixValue = ((data.balance + 1) / 2) * 100;
-		var displayMixText = `${displayMixValue.toFixed(0)}%`;
+		}
+
+		var displayMixValue = chatmixState.chatBalance;
+		var displayMixText = chatmixState.isEnabled
+			? `${displayMixValue.toFixed(0)}%`
+			: "Disabled";
 
 		action.setFeedback({
 			indicator: displayMixValue,

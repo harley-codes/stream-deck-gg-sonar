@@ -10,16 +10,19 @@ import {
 } from "@elgato/streamdeck";
 
 import { getChannelDisplayName } from "../functions/getChannelDisplayName";
-import { SonarChannel } from "../types/sonarChannel";
-import {
-	getChannelData,
-	offsetChannelVolume,
-	toggleChannelMute,
-} from "../modules/sonar";
 import { getChannelIcon } from "../functions/getChannelIcon";
 
+import {
+	AudioChannel,
+	getAppEndpoint,
+	getAudioDataClassic,
+	getSonarEndpointCached,
+	setChannelMuteClassic,
+	setChannelVolumeClassic,
+} from "steelseries-sonar-sdk";
+
 type ActionSettings = {
-	channel?: SonarChannel;
+	channel?: AudioChannel;
 	changeSpeed: number;
 	pollingSpeed: number;
 	useSonarColors?: boolean;
@@ -28,14 +31,27 @@ type ActionSettings = {
 @action({ UUID: "com.harleycodes.steelseries-gg-sonar.channel-dial-classic" })
 export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 	private intervalId: NodeJS.Timeout | null = null;
+	private appEndpoint: string | null = null;
+
+	private async getEndpoint(): Promise<string | null> {
+		try {
+			if (!this.appEndpoint) {
+				this.appEndpoint = await getAppEndpoint();
+			}
+			return await getSonarEndpointCached(this.appEndpoint);
+		} catch (err) {
+			console.error("Error getting Sonar endpoint:", err);
+			return null;
+		}
+	}
 
 	override async onWillAppear(
-		ev: WillAppearEvent<ActionSettings>
+		ev: WillAppearEvent<ActionSettings>,
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
 
 		var settings = ev.payload.settings;
-		if (!settings.channel) settings.channel = "master";
+		if (!settings.channel) settings.channel = AudioChannel.Master;
 		if (!settings.changeSpeed) settings.changeSpeed = 5;
 		if (!settings.pollingSpeed) settings.pollingSpeed = 750;
 		if (!settings.useSonarColors) settings.useSonarColors = true;
@@ -44,12 +60,12 @@ export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 		this.intervalId = setInterval(
 			this.updateDisplay,
 			settings.pollingSpeed,
-			ev.action
+			ev.action,
 		);
 	}
 
 	override onWillDisappear(
-		ev: WillDisappearEvent<ActionSettings>
+		ev: WillDisappearEvent<ActionSettings>,
 	): Promise<void> | void {
 		if (this.intervalId) {
 			clearInterval(this.intervalId);
@@ -58,7 +74,7 @@ export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 	}
 
 	override async onDidReceiveSettings(
-		ev: DidReceiveSettingsEvent<ActionSettings>
+		ev: DidReceiveSettingsEvent<ActionSettings>,
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
 		const settings = ev.payload.settings;
@@ -66,11 +82,16 @@ export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 
 		ev.action.setTitle(getChannelDisplayName(settings.channel));
 
-		const data = await getChannelData(settings.channel);
-		if (data === null) return;
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
 
-		const displayVolumeValue = data.volume * 100;
-		const displayVolumeText = data.muted
+		const audioData = await getAudioDataClassic(endpoint);
+		let channelAudio = audioData[settings.channel];
+
+		if (!channelAudio) return;
+
+		const displayVolumeValue = channelAudio.volume;
+		const displayVolumeText = channelAudio.isMuted
 			? "Muted"
 			: `${displayVolumeValue.toFixed(0)}%`;
 
@@ -82,18 +103,32 @@ export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 	}
 
 	override async onDialRotate(
-		ev: DialRotateEvent<ActionSettings>
+		ev: DialRotateEvent<ActionSettings>,
 	): Promise<void> {
-		var settings = ev.payload.settings;
+		const settings = ev.payload.settings;
 		if (!settings.channel) return;
 
-		var amount = ev.payload.ticks * settings.changeSpeed;
-		var data = await offsetChannelVolume(settings.channel, amount);
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
 
-		if (data === null) return;
+		const audioData = await getAudioDataClassic(endpoint);
+		let channelAudio = audioData[settings.channel];
 
-		const displayVolumeValue = data.volume * 100;
-		const displayVolumeText = data.muted
+		if (!channelAudio) return;
+
+		var volumeOffset = ev.payload.ticks * settings.changeSpeed;
+		var newVolume = channelAudio.volume + volumeOffset;
+
+		channelAudio = await setChannelVolumeClassic(
+			endpoint,
+			newVolume,
+			settings.channel,
+		);
+
+		if (!channelAudio) return;
+
+		const displayVolumeValue = channelAudio.volume;
+		const displayVolumeText = channelAudio.isMuted
 			? "Muted"
 			: `${displayVolumeValue.toFixed(0)}%`;
 
@@ -108,12 +143,23 @@ export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 		var settings = ev.payload.settings;
 		if (!settings.channel) return;
 
-		var data = await toggleChannelMute(settings.channel);
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
 
-		if (data === null) return;
+		const audioData = await getAudioDataClassic(endpoint);
+		let channelAudio = audioData[settings.channel];
+		if (!channelAudio) return;
 
-		const displayVolumeValue = data.volume * 100;
-		const displayVolumeText = data.muted
+		const isMuted = !channelAudio.isMuted;
+		channelAudio = await setChannelMuteClassic(
+			endpoint,
+			isMuted,
+			settings.channel,
+		);
+		if (!channelAudio) return;
+
+		const displayVolumeValue = channelAudio.volume;
+		const displayVolumeText = channelAudio.isMuted
 			? "Muted"
 			: `${displayVolumeValue.toFixed(0)}%`;
 
@@ -130,17 +176,23 @@ export class ChannelDialClassic extends SingletonAction<ActionSettings> {
 		var settings = await action.getSettings();
 		if (!settings.channel) return;
 
-		var data = await getChannelData(settings.channel);
-		if (data === null)
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
+
+		const audioData = await getAudioDataClassic(endpoint);
+		const channelAudio = audioData[settings.channel];
+
+		if (!channelAudio) {
 			return action.setFeedback({
 				icon: "",
 				indicator: 0,
 				value: "",
 				title: getChannelDisplayName(settings.channel),
 			});
+		}
 
-		const displayVolumeValue = data.volume * 100;
-		const displayVolumeText = data.muted
+		const displayVolumeValue = channelAudio.volume;
+		const displayVolumeText = channelAudio.isMuted
 			? "Muted"
 			: `${displayVolumeValue.toFixed(0)}%`;
 

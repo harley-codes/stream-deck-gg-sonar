@@ -11,20 +11,21 @@ import {
 } from "@elgato/streamdeck";
 
 import { getChannelDisplayName } from "../functions/getChannelDisplayName";
-import { SonarChannel } from "../types/sonarChannel";
-import {
-	getChannelDataStreamer,
-	offsetChannelVolumeStream,
-	toggleChannelMuteStream,
-} from "../modules/sonar";
-import { getChannelIcon } from "../functions/getChannelIcon";
-import { StreamType } from "../types/streamTypes";
 import { getStreamerIcon } from "../functions/getStreamerIcon";
 import { ELGATO_GREY } from "../const/elgatoColors";
+import {
+	AudioChannel,
+	getAppEndpoint,
+	getAudioDataStream,
+	getSonarEndpointCached,
+	setChannelMuteStreamer,
+	setChannelVolumeStreamer,
+	StreamerPath,
+} from "steelseries-sonar-sdk";
 
 type ActionSettings = {
-	channel?: SonarChannel;
-	currentType: StreamType;
+	channel?: AudioChannel;
+	currentType: StreamerPath;
 	changeSpeed: number;
 	pollingSpeed: number;
 };
@@ -32,26 +33,40 @@ type ActionSettings = {
 @action({ UUID: "com.harleycodes.steelseries-gg-sonar.channel-dial-streamer" })
 export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 	private intervalId: NodeJS.Timeout | null = null;
+	private appEndpoint: string | null = null;
+
+	private async getEndpoint(): Promise<string | null> {
+		try {
+			if (!this.appEndpoint) {
+				this.appEndpoint = await getAppEndpoint();
+			}
+			return await getSonarEndpointCached(this.appEndpoint);
+		} catch (err) {
+			console.error("Error getting Sonar endpoint:", err);
+			return null;
+		}
+	}
 
 	override async onWillAppear(
-		ev: WillAppearEvent<ActionSettings>
+		ev: WillAppearEvent<ActionSettings>,
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
 
 		var settings = ev.payload.settings;
-		if (!settings.channel) settings.channel = "master";
-		if (!settings.currentType) settings.currentType = "monitoring";
+		if (!settings.channel) settings.channel = AudioChannel.Master;
+		if (!settings.currentType)
+			settings.currentType = StreamerPath.Monitoring;
 		if (!settings.changeSpeed) settings.changeSpeed = 5;
 		if (!settings.pollingSpeed) settings.pollingSpeed = 750;
 
 		ev.action.setFeedback({
 			icon1: getStreamerIcon(
-				"monitoring",
-				settings.currentType === "monitoring"
+				StreamerPath.Monitoring,
+				settings.currentType === StreamerPath.Monitoring,
 			),
 			icon2: getStreamerIcon(
-				"streaming",
-				settings.currentType === "streaming"
+				StreamerPath.Streaming,
+				settings.currentType === StreamerPath.Streaming,
 			),
 		});
 
@@ -59,12 +74,12 @@ export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 		this.intervalId = setInterval(
 			this.updateDisplay,
 			settings.pollingSpeed,
-			ev.action
+			ev.action,
 		);
 	}
 
 	override onWillDisappear(
-		ev: WillDisappearEvent<ActionSettings>
+		ev: WillDisappearEvent<ActionSettings>,
 	): Promise<void> | void {
 		if (this.intervalId) {
 			clearInterval(this.intervalId);
@@ -73,7 +88,7 @@ export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 	}
 
 	override async onDidReceiveSettings(
-		ev: DidReceiveSettingsEvent<ActionSettings>
+		ev: DidReceiveSettingsEvent<ActionSettings>,
 	): Promise<void> {
 		if (!ev.action.isDial()) return;
 		const settings = ev.payload.settings;
@@ -81,11 +96,15 @@ export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 
 		ev.action.setTitle(getChannelDisplayName(settings.channel));
 
-		const data = await getChannelDataStreamer(settings.channel);
-		if (data === null) return;
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
 
-		const displayVolumeValueStream = data.streaming.volume * 100;
-		const displayVolumeValueMonitor = data.monitoring.volume * 100;
+		const audioData = await getAudioDataStream(endpoint);
+		const channelAudio = audioData[settings.channel];
+		if (!channelAudio) return;
+
+		const displayVolumeValueStream = channelAudio.streaming.volume;
+		const displayVolumeValueMonitor = channelAudio.monitoring.volume;
 
 		ev.action.setFeedback({
 			indicator1: displayVolumeValueMonitor,
@@ -94,83 +113,95 @@ export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 	}
 
 	override async onDialRotate(
-		ev: DialRotateEvent<ActionSettings>
+		ev: DialRotateEvent<ActionSettings>,
 	): Promise<void> {
 		var settings = ev.payload.settings;
 		if (!settings.channel) return;
 
-		var amount = ev.payload.ticks * settings.changeSpeed;
-		var data = await offsetChannelVolumeStream(
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
+
+		const audioData = await getAudioDataStream(endpoint);
+		let channelAudio = audioData[settings.channel];
+		if (!channelAudio) return;
+
+		var volumeOffset = ev.payload.ticks * settings.changeSpeed;
+		var newVolume =
+			channelAudio[settings.currentType].volume + volumeOffset;
+
+		const pathAudio = await setChannelVolumeStreamer(
+			endpoint,
+			newVolume,
 			settings.channel,
-			amount,
-			settings.currentType
+			settings.currentType,
 		);
 
-		if (data === null) return;
-
-		const displayVolumeValueStream = data.streaming.volume * 100;
-		const displayVolumeValueMonitor = data.monitoring.volume * 100;
-
-		ev.action.setFeedback({
-			indicator1: displayVolumeValueMonitor,
-			indicator2: displayVolumeValueStream,
-		});
+		if (settings.currentType === StreamerPath.Monitoring) {
+			ev.action.setFeedback({
+				indicator1: pathAudio.volume,
+			});
+		} else {
+			ev.action.setFeedback({
+				indicator2: pathAudio.volume,
+			});
+		}
 	}
 
 	override async onDialUp(ev: DialUpEvent<ActionSettings>): Promise<void> {
 		var settings = ev.payload.settings;
 		if (!settings.channel) return;
 
-		var data = await toggleChannelMuteStream(
+		const endpoint = await this.getEndpoint();
+		if (!endpoint) return;
+
+		const audioData = await getAudioDataStream(endpoint);
+		let channelAudio = audioData[settings.channel];
+		if (!channelAudio) return;
+
+		const isMuted = !channelAudio[settings.currentType].isMuted;
+
+		const pathAudio = await setChannelMuteStreamer(
+			endpoint,
+			isMuted,
 			settings.channel,
-			settings.currentType
+			settings.currentType,
 		);
 
-		if (data === null) return;
+		const indicatorValue = {
+			value: pathAudio.volume,
+			bar_fill_c: pathAudio.isMuted ? "#FF0000" : "#ffffff",
+			bar_bg_c: pathAudio.isMuted ? "#823333" : ELGATO_GREY,
+		};
 
-		const displayVolumeValueStream = data.streaming.volume * 100;
-		const displayVolumeValueMonitor = data.monitoring.volume * 100;
-		const volumeMutedStream = data.streaming.muted;
-		const volumeMutedMonitor = data.monitoring.muted;
-
-		ev.action.setFeedback({
-			indicator1: {
-				value: displayVolumeValueMonitor,
-				bar_fill_c: volumeMutedMonitor ? "#FF0000" : "#ffffff",
-				bar_bg_c: volumeMutedMonitor ? "#823333" : ELGATO_GREY,
-			},
-			indicator2: {
-				value: displayVolumeValueStream,
-				bar_fill_c: volumeMutedStream ? "#FF0000" : "#ffffff",
-				bar_bg_c: volumeMutedStream ? "#823333" : ELGATO_GREY,
-			},
-			icon1: getStreamerIcon(
-				"monitoring",
-				settings.currentType === "monitoring"
-			),
-			icon2: getStreamerIcon(
-				"streaming",
-				settings.currentType === "streaming"
-			),
-		});
+		if (settings.currentType === StreamerPath.Monitoring) {
+			ev.action.setFeedback({
+				indicator1: indicatorValue,
+			});
+		} else {
+			ev.action.setFeedback({
+				indicator2: indicatorValue,
+			});
+		}
 	}
 
 	override async onTouchTap(
-		ev: TouchTapEvent<ActionSettings>
+		ev: TouchTapEvent<ActionSettings>,
 	): Promise<void> {
 		var settings = ev.payload.settings;
 		if (!settings.channel) return;
 		settings.currentType =
-			settings.currentType === "monitoring" ? "streaming" : "monitoring";
+			settings.currentType === StreamerPath.Monitoring
+				? StreamerPath.Streaming
+				: StreamerPath.Monitoring;
 		ev.action.setSettings(settings);
 		ev.action.setFeedback({
 			icon1: getStreamerIcon(
-				"monitoring",
-				settings.currentType === "monitoring"
+				StreamerPath.Monitoring,
+				settings.currentType === StreamerPath.Monitoring,
 			),
 			icon2: getStreamerIcon(
-				"streaming",
-				settings.currentType === "streaming"
+				StreamerPath.Streaming,
+				settings.currentType === StreamerPath.Streaming,
 			),
 		});
 	}
@@ -182,19 +213,29 @@ export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 			var settings = await action.getSettings();
 			if (!settings.channel) return;
 
-			var data = await getChannelDataStreamer(settings.channel);
-			if (data === null)
+			const endpoint = await this.getEndpoint();
+			if (!endpoint) return;
+
+			const audioData = await getAudioDataStream(endpoint);
+			let channelAudio = audioData[settings.channel];
+
+			if (!channelAudio) {
 				return action.setFeedback({
 					icon: "",
 					indicator: 0,
 					value: "",
 					title: getChannelDisplayName(settings.channel),
 				});
+			}
 
-			const displayVolumeValueStream = data.streaming.volume * 100;
-			const displayVolumeValueMonitor = data.monitoring.volume * 100;
-			const volumeMutedStream = data.streaming.muted;
-			const volumeMutedMonitor = data.monitoring.muted;
+			const displayVolumeValueStream =
+				channelAudio[StreamerPath.Streaming].volume;
+			const displayVolumeValueMonitor =
+				channelAudio[StreamerPath.Monitoring].volume;
+			const volumeMutedStream =
+				channelAudio[StreamerPath.Streaming].isMuted;
+			const volumeMutedMonitor =
+				channelAudio[StreamerPath.Monitoring].isMuted;
 
 			action.setFeedback({
 				indicator1: {
@@ -210,7 +251,7 @@ export class ChannelDialStreamer extends SingletonAction<ActionSettings> {
 		} catch (e) {
 			const err = e as Error;
 			console.log(
-				`Error in Channel Dial Streamer updateDisplay: ${err.message}`
+				`Error in Channel Dial Streamer updateDisplay: ${err.message}`,
 			);
 		}
 	}

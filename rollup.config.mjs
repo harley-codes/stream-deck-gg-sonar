@@ -18,9 +18,10 @@ const config = {
 		sourcemap: isWatching,
 		sourcemapPathTransform: (relativeSourcePath, sourcemapPath) => {
 			return url.pathToFileURL(
-				path.resolve(path.dirname(sourcemapPath), relativeSourcePath)
+				path.resolve(path.dirname(sourcemapPath), relativeSourcePath),
 			).href;
 		},
+		inlineDynamicImports: true,
 	},
 	plugins: [
 		json(),

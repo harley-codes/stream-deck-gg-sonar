@@ -9,9 +9,7 @@
 			"Icon": "imgs/actions/dial-action-icon",
 			"Tooltip": "Control volume of a channel in Sonar.",
 			"PropertyInspectorPath": "ui/channel-dial-classic.html",
-			"Controllers": [
-				"Encoder"
-			],
+			"Controllers": ["Encoder"],
 			"Encoder": {
 				"layout": "$B1",
 				"TriggerDescription": {
@@ -31,9 +29,7 @@
 			"Icon": "imgs/actions/dial-action-icon",
 			"Tooltip": "Control volume of a channel in Sonar.",
 			"PropertyInspectorPath": "ui/channel-dial-streamer.html",
-			"Controllers": [
-				"Encoder"
-			],
+			"Controllers": ["Encoder"],
 			"Encoder": {
 				"layout": "$C1",
 				"TriggerDescription": {
@@ -54,9 +50,7 @@
 			"Icon": "imgs/actions/chatmix-action-icon",
 			"Tooltip": "Control CHATMIX in Sonar.",
 			"PropertyInspectorPath": "ui/chatmix-dial.html",
-			"Controllers": [
-				"Encoder"
-			],
+			"Controllers": ["Encoder"],
 			"Encoder": {
 				"layout": "$B2",
 				"TriggerDescription": {
@@ -68,6 +62,25 @@
 					"Image": "imgs/actions/chatmix-action-padded-icon"
 				}
 			]
+		},
+		{
+			"Name": "Profile Selector - Dial",
+			"UUID": "com.harleycodes.steelseries-gg-sonar.profile-selector-dial",
+			"Icon": "imgs/actions/profile-selector-dial-icon",
+			"Tooltip": "Control CHATMIX in Sonar.",
+			"PropertyInspectorPath": "ui/profile-selector-dial.html",
+			"Controllers": ["Encoder"],
+			"Encoder": {
+				"layout": "$A0",
+				"TriggerDescription": {
+					"Rotate": "Change Profile"
+				}
+			},
+			"States": [
+				{
+					"Image": "imgs/actions/profile-selector-dial-icon"
+				}
+			]
 		}
 	],
 	"Category": "SteelSeries GG Sonar",
@@ -77,7 +90,7 @@
 	"Icon": "imgs/plugin/plugin-category-png",
 	"SDKVersion": 3,
 	"Software": {
-		"MinimumVersion": "6.9"
+		"MinimumVersion": "7.1"
 	},
 	"OS": [
 		{

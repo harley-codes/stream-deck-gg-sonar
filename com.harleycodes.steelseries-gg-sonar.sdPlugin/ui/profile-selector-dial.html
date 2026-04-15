@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+	<head lang="en">
+		<title>Profile Selector Settings</title>
+		<meta charset="utf-8" />
+		<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+	</head>
+
+	<body>
+		<!-- Learn more about property inspector components at https://sdpi-components.dev/docs/components -->
+		<sdpi-item label="Channel">
+			<sdpi-select
+				setting="channel"
+				default="game"
+				placeholder="Please choose a channel to control."
+			>
+				<option value="game">Game</option>
+				<option value="chat">Chat</option>
+				<option value="media">Media</option>
+				<option value="aux">AUX</option>
+				<option value="mic">Microphone</option>
+			</sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Favorites Only">
+			<sdpi-checkbox
+				setting="useFavorites"
+				label="Cycle favorites only?"
+			></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="Text Color">
+			<sdpi-checkbox
+				setting="useSonarColors"
+				label="User Sonar Colors?"
+			></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="Refresh Rate Milliseconds">
+			<sdpi-range
+				setting="pollingSpeed"
+				min="500"
+				max="2500"
+				step="1"
+				default="1500"
+				showlabels
+			>
+			</sdpi-range>
+		</sdpi-item>
+	</body>
+</html>
